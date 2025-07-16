@@ -14,7 +14,7 @@ const Header = () => {
   ];
 
   return (
-    <header className="bg-card/80 backdrop-blur-lg border-b border-border sticky top-0 z-50">
+    <header className="bg-slate-900/95 backdrop-blur-lg border-b border-slate-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -22,7 +22,7 @@ const Header = () => {
             <div className="p-2 bg-gradient-primary rounded-lg">
               <Database className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-foreground">QueryAgent</span>
+            <span className="text-xl font-bold text-white">QueryAgent</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -33,8 +33,8 @@ const Header = () => {
                 to={item.href}
                 className={`text-sm font-medium transition-colors ${
                   location.pathname === item.href
-                    ? "text-primary border-b-2 border-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-blue-400 border-b-2 border-blue-400"
+                    : "text-slate-300 hover:text-white"
                 }`}
               >
                 {item.name}
@@ -46,7 +46,7 @@ const Header = () => {
           <div className="md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-muted-foreground hover:text-foreground"
+              className="p-2 text-slate-300 hover:text-white"
             >
               {isMobileMenuOpen ? (
                 <X className="h-6 w-6" />
@@ -59,7 +59,7 @@ const Header = () => {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-border py-4">
+          <div className="md:hidden border-t border-slate-700 py-4">
             <div className="flex flex-col space-y-4">
               {navigation.map((item) => (
                 <Link
@@ -67,8 +67,8 @@ const Header = () => {
                   to={item.href}
                   className={`text-sm font-medium transition-colors ${
                     location.pathname === item.href
-                      ? "text-primary"
-                      : "text-muted-foreground"
+                      ? "text-blue-400"
+                      : "text-slate-300"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
