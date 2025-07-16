@@ -149,8 +149,8 @@ LIMIT 10;`;
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Query Dashboard</h1>
-              <p className="text-slate-600 mt-1">Transform natural language into powerful SQL queries</p>
+              <h1 className="text-3xl font-bold text-white">Query Dashboard</h1>
+              <p className="text-white/80 mt-1">Transform natural language into powerful SQL queries</p>
             </div>
             <div className="flex items-center space-x-4">
               <Badge variant={hasSchema ? "default" : "secondary"} className="px-3 py-1">
@@ -167,7 +167,7 @@ LIMIT 10;`;
                 )}
               </Badge>
               {!hasSchema && (
-                <Button variant="outline" size="sm" onClick={() => window.location.href = '/schema-upload'}>
+                <Button variant="outline" size="sm" onClick={() => window.location.href = '/schema-upload'} className="border-white/20 text-white hover:bg-white/10">
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Schema
                 </Button>
@@ -180,9 +180,9 @@ LIMIT 10;`;
           {/* Left Column - Input & SQL */}
           <div className="space-y-6">
             {/* Natural Language Input */}
-            <Card>
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="flex items-center">
+                <CardTitle className="flex items-center text-white">
                   <MessageSquare className="mr-2 h-5 w-5" />
                   Natural Language Query
                 </CardTitle>
@@ -197,12 +197,12 @@ Examples:
 • Which regions have the highest growth rate?"
                   value={naturalLanguageQuery}
                   onChange={(e) => setNaturalLanguageQuery(e.target.value)}
-                  className="min-h-[120px] mb-4"
+                  className="min-h-[120px] mb-4 bg-background/50 border-white/10 text-white placeholder:text-white/60"
                 />
                 <Button 
                   onClick={handleGenerateSQL} 
                   disabled={isGenerating || !naturalLanguageQuery.trim()}
-                  className="w-full"
+                  className="w-full bg-primary hover:bg-primary/90 text-white"
                 >
                   {isGenerating ? (
                     <>
@@ -220,19 +220,19 @@ Examples:
             </Card>
 
             {/* SQL Display */}
-            <Card>
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center">
+                  <CardTitle className="flex items-center text-white">
                     <Code className="mr-2 h-5 w-5" />
                     Generated SQL
                   </CardTitle>
                   {generatedSQL && (
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={handleCopySQL}>
+                      <Button variant="outline" size="sm" onClick={handleCopySQL} className="border-white/20 text-white hover:bg-white/10">
                         <Copy className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handleEditSQL}>
+                      <Button variant="outline" size="sm" onClick={handleEditSQL} className="border-white/20 text-white hover:bg-white/10">
                         <Edit className="w-4 h-4 mr-1" />
                         {isEditingSQL ? 'Save' : 'Edit'}
                       </Button>
@@ -243,7 +243,7 @@ Examples:
               <CardContent>
                 {generatedSQL ? (
                   <>
-                    <div className="bg-slate-900 rounded-lg p-4 mb-4">
+                    <div className="bg-slate-900 rounded-lg p-4 mb-4 border border-white/10">
                       <pre className="text-slate-100 text-sm overflow-x-auto">
                         {isEditingSQL ? (
                           <Textarea
@@ -259,7 +259,7 @@ Examples:
                     <Button 
                       onClick={handleExecuteSQL} 
                       disabled={isExecuting}
-                      className="w-full"
+                      className="w-full bg-primary hover:bg-primary/90 text-white"
                     >
                       {isExecuting ? (
                         <>
@@ -275,7 +275,7 @@ Examples:
                     </Button>
                   </>
                 ) : (
-                  <div className="text-center py-12 text-slate-500">
+                  <div className="text-center py-12 text-white/60">
                     <Code className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Generated SQL will appear here</p>
                     <p className="text-sm">Enter a natural language query to get started</p>
@@ -288,9 +288,9 @@ Examples:
           {/* Right Column - Results & Response */}
           <div className="space-y-6">
             {/* Query Results */}
-            <Card>
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="flex items-center">
+                <CardTitle className="flex items-center text-white">
                   <Database className="mr-2 h-5 w-5" />
                   Query Results
                 </CardTitle>
@@ -300,9 +300,9 @@ Examples:
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-slate-200">
+                        <tr className="border-b border-white/10">
                           {Object.keys(queryResults[0]).map((column) => (
-                            <th key={column} className="text-left py-3 px-4 font-medium text-slate-700 capitalize">
+                            <th key={column} className="text-left py-3 px-4 font-medium text-white/90 capitalize">
                               {column.replace('_', ' ')}
                             </th>
                           ))}
@@ -310,9 +310,9 @@ Examples:
                       </thead>
                       <tbody>
                         {queryResults.map((row, index) => (
-                          <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
+                          <tr key={index} className="border-b border-white/5 hover:bg-white/5">
                             {Object.values(row).map((value, cellIndex) => (
-                              <td key={cellIndex} className="py-3 px-4 text-slate-600">
+                              <td key={cellIndex} className="py-3 px-4 text-white/80">
                                 {typeof value === 'number' && value > 1000 
                                   ? value.toLocaleString() 
                                   : String(value)
@@ -325,7 +325,7 @@ Examples:
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-slate-500">
+                  <div className="text-center py-12 text-white/60">
                     <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Query results will appear here</p>
                     <p className="text-sm">Execute a SQL query to see the data</p>
@@ -335,9 +335,9 @@ Examples:
             </Card>
 
             {/* Natural Language Response */}
-            <Card>
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="flex items-center">
+                <CardTitle className="flex items-center text-white">
                   <MessageSquare className="mr-2 h-5 w-5" />
                   AI Analysis
                 </CardTitle>
@@ -345,12 +345,12 @@ Examples:
               <CardContent>
                 {naturalLanguageResponse ? (
                   <div className="prose prose-slate max-w-none">
-                    <p className="text-slate-700 leading-relaxed">
+                    <p className="text-white/90 leading-relaxed">
                       {naturalLanguageResponse}
                     </p>
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-slate-500">
+                  <div className="text-center py-12 text-white/60">
                     <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>AI insights will appear here</p>
                     <p className="text-sm">Execute a query to get natural language analysis</p>
