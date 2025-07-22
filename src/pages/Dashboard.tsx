@@ -180,7 +180,7 @@ LIMIT 10;`;
           {/* Left Column - Input & SQL */}
           <div className="space-y-6">
             {/* Natural Language Input */}
-            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-slate-800/80 border-white/10 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center text-white">
                   <MessageSquare className="mr-2 h-5 w-5" />
@@ -220,7 +220,7 @@ Examples:
             </Card>
 
             {/* SQL Display */}
-            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-slate-800/80 border-white/10 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center text-white">
@@ -288,7 +288,7 @@ Examples:
           {/* Right Column - Results & Response */}
           <div className="space-y-6">
             {/* Query Results */}
-            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-slate-800/80 border-white/10 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center text-white">
                   <Database className="mr-2 h-5 w-5" />
@@ -335,7 +335,7 @@ Examples:
             </Card>
 
             {/* Natural Language Response */}
-            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-slate-800/80 border-white/10 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center text-white">
                   <MessageSquare className="mr-2 h-5 w-5" />
