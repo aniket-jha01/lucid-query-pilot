@@ -202,7 +202,7 @@ Examples:
                 <Button 
                   onClick={handleGenerateSQL} 
                   disabled={isGenerating || !naturalLanguageQuery.trim()}
-                  className="w-full bg-slate-700 hover:bg-slate-600 text-white border-white/10"
+                  className="w-full bg-slate-700 hover:bg-blue-700 text-white border-white/10"
                 >
                   {isGenerating ? (
                     <>
@@ -259,7 +259,7 @@ Examples:
                     <Button 
                       onClick={handleExecuteSQL} 
                       disabled={isExecuting}
-                      className="w-full bg-slate-700 hover:bg-slate-600 text-white border-white/10"
+                      className="w-full bg-slate-700 hover:bg-blue-700 text-white border-white/10"
                     >
                       {isExecuting ? (
                         <>
