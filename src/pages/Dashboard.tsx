@@ -153,7 +153,7 @@ LIMIT 10;`;
               <p className="text-white/80 mt-1">Transform natural language into powerful SQL queries</p>
             </div>
             <div className="flex items-center space-x-4">
-              <Badge variant={hasSchema ? "default" : "secondary"} className="px-3 py-1">
+              <Badge variant={hasSchema ? "default" : "secondary"} className="px-3 py-1 bg-white/10 text-white border-white/20">
                 {hasSchema ? (
                   <>
                     <CheckCircle className="w-4 h-4 mr-1" />
@@ -167,7 +167,7 @@ LIMIT 10;`;
                 )}
               </Badge>
               {!hasSchema && (
-                <Button variant="outline" size="sm" onClick={() => window.location.href = '/schema-upload'} className="border-white/20 text-white hover:bg-white/10">
+                <Button variant="outline" size="sm" onClick={() => window.location.href = '/schema-upload'} className="bg-white/10 border-white/20 text-white hover:bg-white/20">
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Schema
                 </Button>
