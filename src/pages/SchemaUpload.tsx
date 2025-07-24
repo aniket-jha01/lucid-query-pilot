@@ -18,8 +18,10 @@ import {
   Code,
   File,
 } from "lucide-react";
+import { uploadSchema } from "@/api/schema";
 
-const SchemaUpload = () => {
+// Accept onSchemaUploaded as a prop
+const SchemaUpload = ({ onSchemaUploaded }: { onSchemaUploaded?: () => void }) => {
   const navigate = useNavigate();
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -66,7 +68,7 @@ const SchemaUpload = () => {
     setUploadStatus('uploading');
     setUploadProgress(0);
 
-    // Simulate upload progress
+    // Simulate upload progress (for UI feedback)
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 90) {
@@ -78,27 +80,32 @@ const SchemaUpload = () => {
     }, 200);
 
     try {
-      // Simulate API call to backend
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // --- REAL API CALL ---
+      const result = await uploadSchema(file);
+
       setUploadProgress(100);
       setUploadStatus('success');
-      
+
       toast({
         title: "Schema uploaded successfully!",
         description: `${file.name} has been processed and is ready for querying.`,
       });
 
-      // Auto-redirect to dashboard after successful upload
+      // Call the callback to refresh schema status
+      if (onSchemaUploaded) onSchemaUploaded();
+
+      // Optionally, store schemaId or pass it to the dashboard
+      // result.schemaId
+
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
 
-    } catch (error) {
+    } catch (error: any) {
       setUploadStatus('error');
       toast({
         title: "Upload failed",
-        description: "There was an error processing your schema file. Please try again.",
+        description: error.message || "There was an error processing your schema file. Please try again.",
         variant: "destructive",
       });
     } finally {

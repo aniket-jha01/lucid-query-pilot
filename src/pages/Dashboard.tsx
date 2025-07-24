@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +21,8 @@ import {
   Clock,
   Upload,
 } from "lucide-react";
+import { fetchActiveSchema, generateSQL, listConnections, executeSQL, analyzeResults } from "@/api/query";
+// import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 const Dashboard = () => {
   const [naturalLanguageQuery, setNaturalLanguageQuery] = useState("");
@@ -31,7 +33,44 @@ const Dashboard = () => {
   const [naturalLanguageResponse, setNaturalLanguageResponse] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasSchema, setHasSchema] = useState(false); // Simulate schema status
+  const [schemaName, setSchemaName] = useState<string | null>(null);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string>("");
+
+  useEffect(() => {
+    async function fetchConnections() {
+      try {
+        const res = await listConnections();
+        setConnections(res.connections || []);
+        if (res.connections && res.connections.length > 0) {
+          setSelectedConnectionId(res.connections[0].id);
+        }
+      } catch (e: any) {
+        toast({
+          title: "Error fetching connections",
+          description: e.message,
+          variant: "destructive",
+        });
+      }
+    }
+    fetchConnections();
+  }, []);
+
+  useEffect(() => {
+    async function checkSchemaStatus() {
+      try {
+        const status = await fetchActiveSchema();
+        setHasSchema(status.status === "active");
+        setSchemaName(status.schema_name || null);
+      } catch (e) {
+        setHasSchema(false);
+        setSchemaName(null);
+      }
+    }
+    checkSchemaStatus();
+  }, []);
 
   // Mock data for demonstration
   const mockResults = [
@@ -55,29 +94,34 @@ const Dashboard = () => {
     setIsGenerating(true);
     
     try {
-      // Simulate AI processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockSQL = `SELECT c.customer_name, SUM(o.amount) as revenue, '${new Date().getFullYear()} Q1' as quarter
-FROM customers c
-JOIN orders o ON c.id = o.customer_id
-WHERE o.date >= '2024-01-01' AND o.date < '2024-04-01'
-GROUP BY c.customer_name
-ORDER BY revenue DESC
-LIMIT 10;`;
+      // Fetch the most recent active schema
+      const schemaStatus = await fetchActiveSchema();
+      if (schemaStatus.status !== "active" || !schemaStatus.schema_id) {
+        toast({
+          title: "No active schema found",
+          description: "Please upload a schema before generating SQL.",
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+      const schemaId = schemaStatus.schema_id;
 
-      setGeneratedSQL(mockSQL);
-      setEditableSQL(mockSQL);
-      
+      // Call backend to generate SQL
+      const result = await generateSQL(naturalLanguageQuery, schemaId);
+      const sql = result.generated_sql;
+      setGeneratedSQL(sql);
+      setEditableSQL(sql);
+
       toast({
         title: "SQL generated successfully!",
         description: "Review the query below and execute when ready.",
       });
       
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error generating SQL",
-        description: "Please try again or contact support if the issue persists.",
+        description: error.message || "Please try again or contact support if the issue persists.",
         variant: "destructive",
       });
     } finally {
@@ -94,27 +138,43 @@ LIMIT 10;`;
       });
       return;
     }
-
     setIsExecuting(true);
-    
     try {
-      // Simulate query execution
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setQueryResults(mockResults);
-      setNaturalLanguageResponse(
-        "Based on your query, here are the top 5 customers by revenue for Q1 2024. Acme Corp leads with $125,000 in revenue, followed by TechFlow Inc with $98,000. The total revenue from these top customers represents a strong performance for the quarter."
-      );
-      
+      // Fetch the most recent active schema
+      const schemaStatus = await fetchActiveSchema();
+      if (schemaStatus.status !== "active" || !schemaStatus.schema_id) {
+        toast({
+          title: "No active schema found",
+          description: "Please upload a schema before executing SQL.",
+          variant: "destructive",
+        });
+        setIsExecuting(false);
+        return;
+      }
+      const schemaId = schemaStatus.schema_id;
+      const result = await executeSQL(editableSQL, schemaId);
+      setQueryResults(result.results || []);
+      setNaturalLanguageResponse(""); // Clear previous analysis
       toast({
         title: "Query executed successfully!",
-        description: `Retrieved ${mockResults.length} rows in 0.234 seconds.`,
+        description: `Retrieved ${result.results?.length || 0} rows.`,
       });
-      
-    } catch (error) {
+      // --- AI Analysis ---
+      if (result.results && result.results.length > 0) {
+        setIsAnalyzing(true);
+        try {
+          const analysis = await analyzeResults(result.results, naturalLanguageQuery, editableSQL);
+          setNaturalLanguageResponse(analysis.analysis);
+        } catch (e: any) {
+          setNaturalLanguageResponse("Failed to generate analysis: " + (e.message || "Unknown error"));
+        } finally {
+          setIsAnalyzing(false);
+        }
+      }
+    } catch (error: any) {
       toast({
         title: "Error executing query",
-        description: "Please check your SQL syntax and try again.",
+        description: error.message || "Please check your SQL syntax and try again.",
         variant: "destructive",
       });
     } finally {
@@ -158,6 +218,9 @@ LIMIT 10;`;
                   <>
                     <CheckCircle className="w-4 h-4 mr-1" />
                     Schema Loaded
+                    {schemaName && (
+                      <span className="ml-2 text-xs text-blue-200">({schemaName})</span>
+                    )}
                   </>
                 ) : (
                   <>
@@ -256,6 +319,18 @@ Examples:
                         )}
                       </pre>
                     </div>
+                    {/* <div className="mb-4">
+                      <Select value={selectedConnectionId} onValueChange={setSelectedConnectionId}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a database connection" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {connections.map((conn) => (
+                            <SelectItem key={conn.id} value={conn.id}>{conn.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div> */}
                     <Button 
                       onClick={handleExecuteSQL} 
                       disabled={isExecuting}
@@ -343,7 +418,12 @@ Examples:
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {naturalLanguageResponse ? (
+                {isAnalyzing ? (
+                  <div className="text-center py-12 text-white/60">
+                    <RefreshCw className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
+                    <p>Analyzing results with AI...</p>
+                  </div>
+                ) : naturalLanguageResponse ? (
                   <div className="prose prose-slate max-w-none">
                     <p className="text-white/90 leading-relaxed">
                       {naturalLanguageResponse}
