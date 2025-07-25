@@ -58,14 +58,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Database Setup (SQLite for development) ---
-# Cursor will add SQLAlchemy models and database connection here based on your prompt
-# --- SQLAlchemy Database Setup --
+# --- Database Setup (PostgreSQL for production, SQLite fallback for dev) ---
+POSTGRES_URL = os.getenv("POSTGRES_URL")
+if POSTGRES_URL:
+    DATABASE_URL = POSTGRES_URL
+else:
+    DATABASE_URL = "sqlite:///./queryagent.db"
 
-# Create the SQLAlchemy engine for SQLite
-DATABASE_URL = "sqlite:///./queryagent.db"
 engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
+    DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 )
 
 # Create a configured "Session" class
