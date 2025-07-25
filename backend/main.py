@@ -48,7 +48,7 @@ origins = [
     "http://192.168.1.2:8080",
     "http://192.168.1.2:8082",
     "http://192.168.1.5:8080",
-   " https://lucid-query-pilot.vercel.app/"
+    "https://lucid-query-pilot.vercel.app"
 ]
 
 app.add_middleware(
