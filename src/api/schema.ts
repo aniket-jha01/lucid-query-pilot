@@ -2,7 +2,7 @@ export async function uploadSchema(file: File) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch('http://localhost:8000/api/schema/upload', {
+  const response = await fetch('https://lucid-query-pilot.onrender.com/api/schema/upload', {
     method: 'POST',
     body: formData,
   });

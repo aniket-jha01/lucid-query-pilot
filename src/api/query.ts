@@ -1,5 +1,5 @@
 export async function generateSQL(naturalLanguageQuery: string, schemaId: string) {
-  const response = await fetch('http://localhost:8000/api/query/generate-sql', {
+  const response = await fetch('https://lucid-query-pilot.onrender.com/api/query/generate-sql', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -16,7 +16,7 @@ export async function generateSQL(naturalLanguageQuery: string, schemaId: string
 }
 
 export async function fetchActiveSchema() {
-  const response = await fetch('http://localhost:8000/api/schema/status');
+  const response = await fetch('https://lucid-query-pilot.onrender.com/api/schema/status');
   if (!response.ok) {
     throw new Error('Failed to fetch schema status');
   }
@@ -24,7 +24,7 @@ export async function fetchActiveSchema() {
 }
 
 export async function listConnections() {
-  const response = await fetch('http://localhost:8000/api/connections');
+  const response = await fetch('https://lucid-query-pilot.onrender.com/api/connections');
   if (!response.ok) {
     throw new Error('Failed to fetch database connections');
   }
@@ -32,7 +32,7 @@ export async function listConnections() {
 }
 
 export async function executeSQL(sql_query: string, schema_id: string) {
-  const response = await fetch('http://localhost:8000/api/query/execute', {
+  const response = await fetch('https://lucid-query-pilot.onrender.com/api/query/execute', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sql_query, schema_id }),
@@ -45,7 +45,7 @@ export async function executeSQL(sql_query: string, schema_id: string) {
 }
 
 export async function analyzeResults(results: any[], originalQuery: string, sql: string) {
-  const response = await fetch('http://localhost:8000/api/query/analyze', {
+  const response = await fetch('https://lucid-query-pilot.onrender.com/api/query/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ results, originalQuery, sql }),
