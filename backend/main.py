@@ -47,6 +47,7 @@ origins = [
     "http://localhost:3000",
     "http://192.168.1.2:8080",
     "http://192.168.1.2:8082",
+    "http://192.168.1.5:8080",
 ]
 
 app.add_middleware(
@@ -191,7 +192,10 @@ async def generate_sql(
     schema_structure = db.query(SchemaStructure).filter(SchemaStructure.schema_id == request.schema_id).first()
     if not schema_structure:
         raise HTTPException(status_code=404, detail="Schema not found for the provided schema_id.")
-    schema_content = schema_structure.content
+    # Load schema from the 'schema' key in content
+    schema_content = schema_structure.content.get("schema")
+    if not schema_content:
+        raise HTTPException(status_code=404, detail="Schema content not found for the provided schema_id.")
     schema_lines = format_schema_for_prompt(schema_content)
     # Universal, optimized prompt
     prompt = (
@@ -235,10 +239,9 @@ async def generate_sql(
         if not tables_in_sql.issubset(schema_tables) or not all(
             (col in schema_columns or col == "*") for col in columns_in_sql
         ):
-            # For debugging, return the LLM SQL with a warning
             return JSONResponse(
                 content={
-                    "message": "Warning: LLM generated SQL with unknown tables/columns. Review before executing.",
+                    "message": "Generated SQL references tables or columns not in the schema.",
                     "generated_sql": generated_sql
                 },
                 status_code=status.HTTP_200_OK
@@ -342,8 +345,16 @@ def create_tables_and_insert_data(engine, schema):
     with engine.begin() as conn:
         for table in schema.get("tables", []):
             table_name = table["name"]
-            print("Creating table:", table_name)
+            print(f"Creating table: {table_name}")
             columns = table["columns"]
+            # Normalize columns: ensure each is an object with 'name' and 'type'
+            norm_columns = []
+            for col in columns:
+                if isinstance(col, str):
+                    norm_columns.append({"name": col, "type": "TEXT"})
+                elif isinstance(col, dict):
+                    norm_columns.append({"name": col.get("name"), "type": col.get("type", "TEXT")})
+            columns = norm_columns
             col_defs = []
             for col in columns:
                 col_name = col["name"]
@@ -352,16 +363,47 @@ def create_tables_and_insert_data(engine, schema):
             col_defs_str = ", ".join(col_defs)
             create_sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({col_defs_str});'
             conn.execute(text(create_sql))
-            # Insert data if present
-            if "data" in table:
-                for row in table["data"]:
-                    col_names = ", ".join([f'"{k}"' for k in row.keys()])
-                    placeholders = ", ".join([f':{k}' for k in row.keys()])
-                    insert_sql = f'INSERT INTO "{table_name}" ({col_names}) VALUES ({placeholders})'
-                    conn.execute(text(insert_sql), row)
-        # Print tables for debug
+            # Insert data if present (support both 'data' and 'rows' keys)
+            data_rows = table.get("data") or table.get("rows")
+            inserted_count = 0
+            if data_rows:
+                col_names_set = set(col["name"] for col in columns)
+                for row in data_rows:
+                    if not isinstance(row, dict):
+                        print(f"Skipping malformed row in table {table_name}: {row}")
+                        continue
+                    # Align row keys with columns: fill missing with None, ignore extras
+                    norm_row = {col: row.get(col, None) for col in col_names_set}
+                    col_names = ", ".join([f'"{k}"' for k in norm_row.keys()])
+                    placeholders = ", ".join([f':{k}' for k in norm_row.keys()])
+                    insert_sql = f'INSERT INTO "{table_name}" ({col_names}) VALUES ({placeholders});'
+                    try:
+                        conn.execute(text(insert_sql), norm_row)
+                        inserted_count += 1
+                    except Exception as e:
+                        print(f"Failed to insert row into {table_name}: {norm_row} | Error: {e}")
+                        continue
+            print(f"Inserted {inserted_count} rows into {table_name}")
+            # Fetch and print a sample of data from the table
+            try:
+                sample = conn.execute(text(f'SELECT * FROM "{table_name}" LIMIT 3;')).fetchall()
+                print(f"Sample data from {table_name}: {sample}")
+            except Exception as e:
+                print(f"Failed to fetch sample data from {table_name}: {e}")
+        # Print tables in DB for debug
         tables = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table';")).fetchall()
         print("Tables in DB after upload:", [t[0] for t in tables])
+        # Check if any data is present in any table
+        total_rows = 0
+        for t in tables:
+            tname = t[0]
+            try:
+                count = conn.execute(text(f'SELECT COUNT(*) FROM "{tname}";')).scalar()
+                total_rows += count
+            except Exception as e:
+                print(f"Failed to count rows in {tname}: {e}")
+        if total_rows == 0:
+            raise ValueError("No data was inserted into any table. Please check your file format or try a different file.")
 
 # --- Modified upload_schema endpoint ---
 @app.post("/api/schema/upload")
@@ -418,41 +460,19 @@ async def upload_schema(
         if file_extension == "db":
             with open(user_db_path, "wb") as f:
                 f.write(file_content)
-        elif file_extension == "sql":
-            engine = create_engine(f"sqlite:///{user_db_path}")
-            sql = file_content.decode("utf-8")
-            with engine.connect() as conn:
-                for stmt in sqlparse.split(sql):
-                    if stmt.strip():
-                        conn.execute(text(stmt))
-            # After executing SQL, extract schema and insert data if possible (optional, for now just create tables)
-        elif file_extension in ["json", "xlsx", "xls", "csv", "txt"]:
-            engine = create_engine(f"sqlite:///{user_db_path}")
-            if file_extension == "json":
-                schema = parse_json_schema(file_content)
-                print("Parsed schema:", schema)
-                create_tables_and_insert_data(engine, schema)
-            elif file_extension in ["xlsx", "xls"]:
-                schema = parse_excel_schema(file_content)
-                print("Parsed schema:", schema)
-                create_tables_and_insert_data(engine, schema)
-            elif file_extension == "csv":
-                schema = parse_csv_schema(file_content)
-                print("Parsed schema:", schema)
-                create_tables_and_insert_data(engine, schema)
-            elif file_extension == "txt":
-                llm_model = genai.GenerativeModel("gemini-1.5-pro")
-                schema = parse_text_schema_with_llm(file_content, llm_model)
-                print("Parsed schema:", schema)
-                create_tables_and_insert_data(engine, schema)
         else:
-            raise ValueError(f"Unsupported file extension: {file_extension}")
+            engine = create_engine(f"sqlite:///{user_db_path}")
+            llm_model = genai.GenerativeModel("gemini-1.5-pro")
+            from schema_parser import parse_schema_hybrid
+            schema = parse_schema_hybrid(file_content, file_extension, llm_model)
+            print("Parsed schema:", schema)
+            create_tables_and_insert_data(engine, schema)
 
-        # Store the DB path in SchemaStructure for future reference (optional)
+        # Store the DB path and schema in SchemaStructure for future reference
         new_schema_structure = SchemaStructure(
             id=str(uuid.uuid4()),
             schema_id=new_schema.id,
-            content={"db_path": user_db_path}
+            content={"db_path": user_db_path, "schema": schema}
         )
         db.add(new_schema_structure)
         db.commit()
