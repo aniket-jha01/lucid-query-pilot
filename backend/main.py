@@ -48,6 +48,7 @@ origins = [
     "http://192.168.1.2:8080",
     "http://192.168.1.2:8082",
     "http://192.168.1.5:8080",
+   " https://lucid-query-pilot.vercel.app/"
 ]
 
 app.add_middleware(
@@ -60,10 +61,11 @@ app.add_middleware(
 
 # --- Database Setup (PostgreSQL for production, SQLite fallback for dev) ---
 POSTGRES_URL = os.getenv("POSTGRES_URL")
-if POSTGRES_URL:
+if POSTGRES_URL and POSTGRES_URL.strip():  # Only use if not empty
     DATABASE_URL = POSTGRES_URL
 else:
     DATABASE_URL = "sqlite:///./queryagent.db"
+    print("Using SQLite database for development/testing")
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
@@ -482,13 +484,15 @@ async def upload_schema(
         new_schema.status = "ACTIVE"
         db.commit()
 
+        response_data = {
+            "message": "Schema uploaded and database created successfully.",
+            "filename": file.filename,
+            "file_type": file_extension,
+            "schemaId": str(new_schema.id)
+        }
+        print(f"Returning response: {response_data}")
         return JSONResponse(
-            content={
-                "message": "Schema uploaded and database created successfully.",
-                "filename": file.filename,
-                "file_type": file_extension,
-                "schemaId": str(new_schema.id)
-            },
+            content=response_data,
             status_code=status.HTTP_201_CREATED
         )
     except Exception as e:
